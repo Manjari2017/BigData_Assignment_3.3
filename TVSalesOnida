@@ -1,0 +1,117 @@
+Assignment 3.3: 3.Write a Map Reduce program to calculate the total units sold in each state for Onida company. 
+Commands:
+	Step 1: create a directory inputFiles.
+	--> hdfs dfs -mkdir -m 755 inputFiles
+	Step 2: copy input file to hdfs folder inputFiles. 
+	--> hdfs dfs -put /home/acadgild/inputFiles/television.txt inputFiles/
+	Step 3: write mapreduce program in java. For code please look into below.
+	Step 4: Create Jar File
+	Step 5: Make sure there is no output folder. for that run delete command
+	--> hdfs dfs -rm -r outputTVSalesOnida/
+	Step 6: run jar command
+	--> hadoop jar /home/acadgild/workspace/TVSetsOnida.jar inputFiles/television.txt outputTVSalesOnida/
+	Step 7: If success open file
+	--> hdfs dfs -ls outputTVSalesOnida/
+	Step 8: From 2 files data file format will be part-x-xxxxx. open that file.
+	--> hdfs dfs -cat outputTVSalesOnida/part-r-00000
+  
+JAVA Mapreduce program:
+
+  Map Class:
+  ===============================================
+  package Session3Assign33;
+
+  import java.io.IOException;
+
+  import org.apache.hadoop.io.IntWritable;
+  import org.apache.hadoop.io.LongWritable;
+  import org.apache.hadoop.io.Text;
+  import org.apache.hadoop.mapreduce.*;
+
+  public class TVSetsOnidaSalesMap extends Mapper<LongWritable, Text, Text, IntWritable>
+  {
+    public void setup(){}
+    private Text brandName = new Text();
+    private final static IntWritable count =new IntWritable(1); 
+
+    public void map(LongWritable key, Text value, Context context) 
+        throws IOException, InterruptedException 
+    {		
+      String[] lineArray = value.toString().split("\\|");
+      if(lineArray[0].toString().toLowerCase().equals("onida") && Integer.parseInt(lineArray[5]) > 0 )
+      {
+        if(!"NA".equals(lineArray[0]) && !"NA".equals(lineArray[1])) // this line is to filter invalid records contains 'NA'
+        {
+        brandName= new Text(lineArray[3]);				
+        context.write(brandName, count);
+        }
+      }
+    }
+    public void cleanup(){}
+  }
+  Reducer class:
+  =========================================
+  package Session3Assign33;
+
+  import java.io.IOException;
+
+  import org.apache.hadoop.io.IntWritable;
+  import org.apache.hadoop.io.Text;
+  import org.apache.hadoop.mapreduce.Reducer;
+
+  public class TVSetsOnidaSalesRed extends Reducer<Text, IntWritable, Text, IntWritable>
+  {	
+    public void setup(){}
+    public void reduce(Text key, Iterable<IntWritable> values,Context context) 
+        throws IOException, InterruptedException	
+    {
+      int sum = 0;
+      for(IntWritable sumVal:values)
+      {
+        sum+=sumVal.get();
+      }
+      context.write(key, new IntWritable(sum));
+    }
+    public void cleanup(){}
+  }
+
+  Driver Class:
+  =====================================================
+  package Session3Assign33;
+
+  import org.apache.hadoop.fs.Path; 
+  import org.apache.hadoop.conf.Configuration;
+  import org.apache.hadoop.mapreduce.Job;
+
+  import org.apache.hadoop.mapreduce.lib.input.FileInputFormat; 
+  import org.apache.hadoop.mapreduce.lib.input.TextInputFormat; 
+  import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat; 
+  import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
+  import org.apache.hadoop.io.IntWritable;
+  import org.apache.hadoop.io.Text;
+
+  public class TVSetsOnidaSalesDriver {
+    @SuppressWarnings("deprecation")
+    public static void main(String[] args) throws Exception {
+      Configuration conf = new Configuration();
+      Job job = new Job(conf, "TVSetsOnidaSalesDriver");
+      job.setJarByClass(TVSetsOnidaSalesDriver.class);
+
+      job.setMapOutputKeyClass(Text.class);
+      job.setMapOutputValueClass(IntWritable.class);
+
+      job.setOutputKeyClass(Text.class);
+      job.setOutputValueClass(IntWritable.class);
+
+      job.setMapperClass(TVSetsOnidaSalesMap.class);
+      job.setReducerClass(TVSetsOnidaSalesRed.class);
+
+      job.setInputFormatClass(TextInputFormat.class);
+      job.setOutputFormatClass(TextOutputFormat.class);
+
+      FileInputFormat.addInputPath(job, new Path(args[0])); 
+      FileOutputFormat.setOutputPath(job,new Path(args[1]));
+
+      job.waitForCompletion(true);
+    }
+  }
