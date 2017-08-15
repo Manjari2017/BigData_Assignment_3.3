@@ -12,9 +12,9 @@ Solution:
   Step 6: run jar command
   --> hadoop jar /home/acadgild/workspace/TVSets.jar inputFiles/television.txt outputTVSales/
   Step 7: If success open file
-  --> hdfs dfs -ls outputTVFilterInvalid/
+  --> hdfs dfs -ls outputTVSales/
   Step 8: From 2 files data file format will be part-x-xxxxx. open that file. 
-  --> hdfs dfs -cat outputTVFilterInvalid/part-r-00000
+  --> hdfs dfs -cat outputTVSales/part-r-00000
 
 JAVA Mapreduce program:
 
